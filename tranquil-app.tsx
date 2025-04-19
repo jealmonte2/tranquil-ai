@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useAuth } from "@/contexts/auth-context"
 import {
   Bell,
   MessageCircle,
@@ -32,6 +33,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
 import { useMediaQuery } from "@/hooks/use-mobile"
+import Link from "next/link"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function TranquilApp({ isManagerView = false }) {
   const [showCheckIn, setShowCheckIn] = useState(false)
@@ -44,6 +53,33 @@ export default function TranquilApp({ isManagerView = false }) {
   // Change the mobile breakpoint from 640px to 768px to make it trigger earlier
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isManagerViewInternal, setIsManagerView] = useState(isManagerView) // Added state for manager view
+  const { signOut, profile, user } = useAuth()
+
+  // Get the first letter of the first name or email for the avatar
+  const getInitial = () => {
+    if (profile?.first_name) {
+      return profile.first_name.charAt(0).toUpperCase()
+    }
+    if (user?.email) {
+      return user.email.charAt(0).toUpperCase()
+    }
+    return "U"
+  }
+
+  // Get the display name
+  const getDisplayName = () => {
+    if (profile?.first_name && profile?.last_name) {
+      return `${profile.first_name} ${profile.last_name}`
+    }
+    if (profile?.full_name) {
+      return profile.full_name
+    }
+    if (user?.email) {
+      // Return email without the domain part
+      return user.email.split("@")[0]
+    }
+    return "User"
+  }
 
   const handleCheckInClick = () => {
     setShowCheckIn(true)
@@ -365,7 +401,7 @@ export default function TranquilApp({ isManagerView = false }) {
           </nav>
 
           {/* User Profile */}
-          <div className="pt-6 border-t mt-auto">
+          <div className="pt-6 border-t">
             <div className="flex items-center gap-3 cursor-pointer" onClick={toggleManagerView}>
               <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
                 <span className="text-sm font-medium">S</span>
@@ -820,15 +856,37 @@ export default function TranquilApp({ isManagerView = false }) {
 
         {/* User Profile */}
         <div className="pt-6 border-t">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={toggleManagerView}>
-            <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-              <span className="text-sm font-medium">R</span>
-            </div>
-            <div>
-              <div className="font-medium text-sm">Rehan Mahmood</div>
-              <div className="text-xs text-gray-500">Software Engineer</div>
-            </div>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="flex items-center gap-3 cursor-pointer">
+                <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                  <span className="text-sm font-medium">{getInitial()}</span>
+                </div>
+                <div>
+                  <div className="font-medium text-sm">{getDisplayName()}</div>
+                  <div className="text-xs text-gray-500">{profile?.role || "Software Engineer"}</div>
+                </div>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <Link href="/profile" legacyBehavior passHref>
+                <DropdownMenuItem className="cursor-pointer">Edit Profile</DropdownMenuItem>
+              </Link>
+              <DropdownMenuItem onClick={toggleManagerView} className="cursor-pointer">
+                Switch to Manager View
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  signOut()
+                }}
+                className="cursor-pointer text-red-600"
+              >
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
